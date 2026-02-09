@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="keywords" content="Dylan Apfelbeck, projects, portfolio, Arduino, web applications, coding">
+    <meta name="description" content="Portfolio project for Dylan Apfelbeck - web applications and interactive hardware projects">
+    <title>Portfolio - Dylan Apfelbeck | Projects</title>
+
+    <link rel="stylesheet" href="normalize.css">
+    <link rel="stylesheet" href="main.css">
+    
+    <style>
+        /* Requirement 10: Embedded style for h1 */
+        h1 {
+            border-left: 10px solid rgb(14, 142, 165);
+            padding-left: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgb(30, 41, 53);
+        }
+    </style>
+</head>
+
+<body id="top">
+
+    <div id="wrap">
+        <header>
+            <a href="resume.html" title="View my Resume">
+                <img src="profile.jpg" alt="Dylan Apfelbeck" class="profile-img">
+            </a>
+            <h1>Dylan Apfelbeck Portfolio</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html" title="Home">Home</a></li>
+                    <li><a href="projects.html" title="Projects">Projects</a></li>
+                    <li><a href="resume.html" title="Resume">Resume</a></li>
+                    <li><a href="contact.html" title="Contact">Contact</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section class="projects">
+            <h1>Featured Projects</h1>
+
+            <article class="project-item">
+                <h2>Pen Plotter</h2>
+                <img src="printer.jpg" alt="Arduino Pen Plotter" class="project-img">
+                <p>
+                    The Pen Plotter was my first major dive into the physical world of computing. Using an Arduino 
+                    microcontroller and NEMA 17 stepper motors, I built a CNC-style machine capable of drawing 
+                    complex vector graphics. This project required a deep understanding of real-time signal 
+                    control and precision movement. I spent a significant amount of time calibrating the motor 
+                    drivers to ensure smooth motion and accurate reproduction of digital designs. The hardware 
+                    was partially 3D printed, which taught me about structural integrity and mechanical prototyping. 
+                    This project remains a favorite because it bridges the gap between digital code and tangible 
+                    artistic output, as well as being my first project to be completed as a physical object.
+                </p>
+            </article>
+
+            <article class="project-item">
+                <h2>Custom Alarm Clock</h2>
+                <img src="clock.png" alt="Custom ESP32 Alarm Clock" class="project-img">
+                <p>
+                    Built around an ESP32-S3, this custom alarm clock project focused heavily on user interface 
+                    design and embedded systems. Unlike a standard clock, this device features a WiFi-enabled 
+                    TFT display that pulls real-time data for weather updates. I utilized the TFT_eSPI 
+                    library to create a custom graphical interface, which included tactile button navigation 
+                    and an IR light sensor for controlling it remotely with a normal TV remote, or a custom made one. Developing the software in the Arduino 
+                    IDE allowed me to practice memory management and asynchronous programming to ensure the 
+                    clock remained responsive while handling background network requests.
+                </p>
+            </article>
+
+            <article class="project-item">
+                <h2>Portfolio Site</h2>
+                <img src="site.png" alt="Portfolio Website Screenshot" class="project-img">
+                <p>
+                    This portfolio website itself represents a major milestone in my journey as a web developer. 
+                    Designed from the ground up using clean HTML5 and CSS, the site reflects my commitment 
+                    to accessible and innovative software. I focused on building a responsive layout that 
+                    maintains a professional aesthetic. By 
+                    organizing the CSS into a modular external style sheet, I ensured that the site is 
+                    easy to maintain and update as my career progresses. This project allowed me to 
+                    showcase my branding, technical proficiency in frontend languages, and my ability 
+                    to document complex technical work in a way that is clear and visually engaging for 
+                    potential collaborators.
+                </p>
+            </article>
+
+            <aside>
+                <h2>Quick Facts</h2>
+                <ul>
+                    <li>
+                        <p class="asideText"><strong>Projects Completed:</strong> 3+ major projects</p>
+                    </li>
+                    <li>
+                        <p class="asideText">Focus Areas: Embedded systems, web apps</p>
+                    </li>
+                    <li>
+                        <p class="asideText">Always Learning: New frameworks and tools</p>
+                    </li>
+                </ul>
+            </aside>
+            
+        </section>
+
+        <footer>
+            <address>
+                Dylan Apfelbeck <br>
+                Marathon, WI <br>
+                <a href="mailto:dylan.apfelbeck@gmail.com">dylan.apfelbeck@gmail.com</a>
+            </address>
+            <p>&copy; 2025 Dylan Apfelbeck. All rights reserved.</p>
+            <p><a href="#top">Back to Top</a></p>
+        </footer>
+    </div>
+</body>
+
+</html>
