@@ -268,3 +268,40 @@ input, textarea {
 .submit-btn:hover {
     background-color: rgb(56, 189, 248);
 }
+
+
+
+
+.search-container {
+    margin-bottom: 30px;
+}
+
+#project-search {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #0e8ea5;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.tag {
+    background: #e0f2f1;
+    color: #00796b;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    margin-right: 5px;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.error-msg {
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+input:invalid {
+    border: 2px solid lightcoral;
+}
