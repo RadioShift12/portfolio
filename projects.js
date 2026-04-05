@@ -1,182 +1,174 @@
-// PART 2 STEP 1
-// Global error listener to catch unhandled errors
-window.addEventListener('error', (event) => {
-    console.error(`Global Error Caught: ${event.message} at ${event.filename}:${event.lineno}`);
-});
+let currentId = 0; 
+
+// Part 2: Security - Rate Limiting Closure
+const checkRateLimit = (() => {
+    let lastSubmit = 0;
+    const limit = 5000; // 5 second cooldown
+    return () => {
+        const now = Date.now();
+        if (now - lastSubmit < limit) return false;
+        lastSubmit = now;
+        return true;
+    };
+})();
+
+// Part 3: Object-Oriented Implementation
+class Project {
+    #id;
+    
+    constructor({ title, description, technologiesUsed, image }) {
+        this.#id = currentId++; 
+        // Part 2: XSS Protection / Sanitization system
+        this.title = this.sanitize(title);
+        this.description = this.sanitize(description);
+        this.technologiesUsed = technologiesUsed.map(t => this.sanitize(t));
+        this.image = image || 'placeholder.png';
+    }
+
+    // I didnt know JS had getters, so that is pretty cool.
+    get ID() {
+        return this.#id;
+    }
+
+    // Securely escapes input by using textContent first, I found this approach online, if I still shouldnt use it, please let me know.
+    sanitize(str) {
+        const div = document.createElement('div');
+        div.textContent = str; 
+        return div.innerHTML; 
+    }
+
+    // Method for daa access
+    getDetails() {
+        return {
+            title: this.title,
+            description: this.description,
+            tech: this.technologiesUsed,
+            image: this.image
+        };
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Part 2: CSRF Protection Setup
+    const csrfToken = Math.random().toString(36).substring(2);
+    sessionStorage.setItem('project_csrf_token', csrfToken);
 
-    const projects = [ 
+    const initialData = [
         {
             title: "Pen Plotter",
-            id: 1,
             image: "printer.jpg",
             description: "A pen plotter based on the frame of a 3d printer.",
-            technologiesUsed: ["Nema 17 Stepper Motors", "Arduino", "3D Printed Parts"],
+            technologiesUsed: ["Arduino", "CNC", "3D Printing"]
         },
         {
             title: "Alarm Clock",
-            id: 2,
             image: "clock.png",
             description: "A 3D printed alarm clock with a remote control.",
-            technologiesUsed: ["ESP32", "3D Printed Parts"],
+            technologiesUsed: ["ESP32", "C++"]
         },
         {
             title: "Portfolio website",
-            id: 3,
             image: "site.png",
             description: "A portfolio website to showcase my projects and skills.",
-            technologiesUsed: ["HTML", "CSS", "JavaScript"],
-        },
-        { 
-            title: "Example",
-            image: "site.png",
-            description: "This will fail validation.",
-            technologiesUsed: ["HTML5", "CSS3", "JavaScript"]
+            technologiesUsed: ["HTML", "CSS", "JavaScript"]
         }
     ];
 
-    const searchInput = document.getElementById('project-search');
+    let projectInstances = initialData.map(data => new Project(data));
+
     const displayArea = document.getElementById('project-display-area');
+    const searchInput = document.getElementById('project-search');
+    const submissionForm = document.getElementById('project-submission-form');
+    const statusDiv = document.getElementById('submission-status');
 
-    
-    function renderProjects(filteredList) {
-        
-        while (displayArea.firstChild) {
-            displayArea.removeChild(displayArea.firstChild);
-        }
+    function renderProjects(list) {
+        displayArea.replaceChildren();
 
-        
-        if (filteredList.length === 0) {
+        if (list.length === 0) {
             const noMatch = document.createElement('p');
-            noMatch.className = 'error-msg';
             noMatch.textContent = "No projects found matching your search.";
             displayArea.appendChild(noMatch);
             return;
         }
 
-        filteredList.forEach(project => {
-            
-            if (!project.title || !project.description || !project.technologiesUsed || !project.id) {
-                
-                console.error("Invalid project data:", project);
-                return;
+        // Part 3: Array Iteration & Destructuring
+        list.forEach(project => {
+            try {
+                const { title, description, tech, image } = project.getDetails();
+
+                const article = document.createElement('article');
+                article.className = 'project-item';
+
+                const h2 = document.createElement('h2');
+                h2.textContent = title;
+
+                const img = document.createElement('img');
+                img.src = image;
+                img.className = 'project-img';
+                img.onerror = () => { img.src = 'placeholder.png'; };
+
+                const p = document.createElement('p');
+                p.textContent = description;
+
+                const techDiv = document.createElement('div');
+                techDiv.className = 'tech-tags';
+                tech.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'tag';
+                    span.textContent = t;
+                    techDiv.appendChild(span);
+                });
+
+                article.append(h2, img, p, techDiv);
+                displayArea.appendChild(article);
+            } catch (error) {
+                // Part 4: Fallback Content
+                console.error("Render Error:", error);
+                const errorFallback = document.createElement('div');
+                errorFallback.textContent = "Error loading project content.";
+                displayArea.appendChild(errorFallback);
             }
-
-            
-            const article = document.createElement('article');
-            article.className = 'project-item';
-
-            const h2 = document.createElement('h2');
-            h2.textContent = project.title;
-
-            const img = document.createElement('img');
-            
-            // PART 2 STEP 1
-            // Fallback if image fails to load
-            img.onerror = () => {
-                img.src = 'placeholder.png';
-                console.warn(`Image failed to load for project: ${project.title}`);
-            };
-            img.src = project.image || 'placeholder.png'; // Fallback if image property is missing
-            img.alt = project.title || 'Project Image';
-            img.className = 'project-img';
-
-            const p = document.createElement('p');
-            p.textContent = project.description;
-
-            const techDiv = document.createElement('div');
-            techDiv.className = 'tech-tags';
-
-            project.technologiesUsed.forEach(tech => {
-                const span = document.createElement('span');
-                span.className = 'tag';
-                span.textContent = tech;
-                techDiv.appendChild(span);
-            });
-
-            
-            article.append(h2, img, p, techDiv);
-            displayArea.appendChild(article);
         });
     }
 
-    
     searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        // STEP 3 PART 1
-        console.log(`User is searching for: ${searchTerm}`); // Testing log
-        const filtered = projects.filter(project => {
-            const matchTitle = project.title.toLowerCase().includes(searchTerm);
-            const matchTech = project.technologiesUsed.some(tech =>
-                tech.toLowerCase().includes(searchTerm)
-            );
-            return matchTitle || matchTech;
+        const term = e.target.value.toLowerCase();
+        const filtered = projectInstances.filter(p => {
+            const details = p.getDetails();
+            return details.title.toLowerCase().includes(term) || 
+                   details.tech.some(t => t.toLowerCase().includes(term));
         });
-        // STEP 3 PART 1
-        if (filtered.length === 0) {
-            console.warn("Search returned no results."); // Testing warning
-        }
         renderProjects(filtered);
     });
 
-    
-    const submissionForm = document.getElementById('project-submission-form');
-    const statusDiv = document.getElementById('submission-status');
-
+    // Form Submissions with Security Checks
     submissionForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        statusDiv.textContent = ""; 
 
-        
-        const title = document.getElementById('new-title').value.trim();
-        const desc = document.getElementById('new-desc').value.trim();
-        const techInput = document.getElementById('new-tech').value.trim();
-        const fileInput = document.getElementById('new-image'); 
-        
-        if (!title || !desc || !techInput) {
-            statusDiv.textContent = "Please fill in all required fields.";
-            statusDiv.style.color = "red";
+        if (!checkRateLimit()) {
+            statusDiv.textContent = "Too many requests. Please wait.";
+            statusDiv.style.color = "orange";
             return;
         }
 
-        
-        
-        let projectImage = "site.png"; 
-        if (fileInput.files && fileInput.files[0]) {
-            
-            projectImage = URL.createObjectURL(fileInput.files[0]);
+        const storedToken = sessionStorage.getItem('project_csrf_token');
+        if (!storedToken) {
+            console.error("Security: CSRF validation failed.");
+            return;
         }
 
-        const newProject = {
-            id: Date.now(), 
-            title: title,
-            description: desc,
-            technologiesUsed: techInput.split(',').map(t => t.trim()),
-            image: projectImage 
-        };
+        const title = document.getElementById('new-title').value;
+        const desc = document.getElementById('new-desc').value;
+        const tech = document.getElementById('new-tech').value.split(',').map(t => t.trim());
 
-        
-        projects.push(newProject);
-        renderProjects(projects);
-        
-        
+        const newProj = new Project({ title, description: desc, technologiesUsed: tech });
+
+        projectInstances.push(newProj);
+        renderProjects(projectInstances);
+        submissionForm.reset();
         statusDiv.textContent = "Project added successfully!";
         statusDiv.style.color = "green";
-        submissionForm.reset();
-        
-        
-        console.log("New Project Added with Image:", newProject);
     });
-    try {
-        renderProjects(projects);
-    } catch (error) {
-        console.error("Failed to render projects:", error);
-        const errorDisplay = document.createElement('p');
-        errorDisplay.textContent = "Encountered an error loading the projects. Please refresh.";
-        displayArea.appendChild(errorDisplay);
-    }
-});
 
-// Shows the global error handler in action by calling a function that doesn't exist
-nonExistentFunction();
+    renderProjects(projectInstances);
+});

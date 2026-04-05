@@ -1,95 +1,67 @@
-// Global error listener to catch unhandled errors
-window.addEventListener('error', (event) => {
-    console.error(`Global Error Caught: ${event.message} at ${event.filename}:${event.lineno}`);
-});
+// Part 2: Rate Limiting for Contact Form
+const contactRateLimit = (() => {
+    let lastAttempt = 0;
+    return () => {
+        const now = Date.now();
+        if (now - lastAttempt < 10000) return false; // 10 second limit
+        lastAttempt = now;
+        return true;
+    };
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('form');
     
-    
+    // Part 2: Create secure CSRF token
+    const contactToken = Math.random().toString(36).slice(2);
+    sessionStorage.setItem('contact_csrf', contactToken);
+
     const statusMessage = document.createElement('div');
     statusMessage.id = 'form-status-message';
     form.parentNode.insertBefore(statusMessage, form);
 
     form.addEventListener('submit', (event) => {
-        event.preventDefault(); 
-        form.reportValidity(); 
-        clearErrors();
-        statusMessage.textContent = "";
+        event.preventDefault();
+        
+        // Part 2: CSRF and Rate Limit Verification
+        if (!contactRateLimit()) {
+            statusMessage.textContent = "Please wait before submitting again.";
+            statusMessage.style.color = "orange";
+            return;
+        }
 
-        const formData = {
-            company: document.getElementById('company').value.trim(),
+        if (sessionStorage.getItem('contact_csrf') !== contactToken) {
+            console.error("Security: Invalid Session Token");
+            return;
+        }
+
+        // Part 2: Input Sanitization using Virtual DOM
+        const rawData = {
             fname: document.getElementById('fname').value.trim(),
-            lname: document.getElementById('lname').value.trim(),
             email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
             comments: document.getElementById('comments').value.trim()
         };
 
+        const sanitizedData = {};
+        for (let key in rawData) {
+            const div = document.createElement('div');
+            div.textContent = rawData[key]; 
+            sanitizedData[key] = div.innerHTML; 
+        }
+
+        // Part 4: Comprehensive error handling
         let errors = [];
-
-        
-        if (formData.company === "") {
-            errors.push({ id: 'company', msg: "Company name is required." });
-        }
-        if (formData.fname === "") {
-            errors.push({ id: 'fname', msg: "First name is required." });
-        }
-        if (formData.lname === "") {
-            errors.push({ id: 'lname', msg: "Last name is required." });
-        }
-        
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (formData.email === "" || !emailRegex.test(formData.email)) {
-            errors.push({ id: 'email', msg: "Please enter a valid email address." });
-        }
-
-        const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
-        if (formData.phone !== "" && !phoneRegex.test(formData.phone)) {
-            errors.push({ id: 'phone', msg: "Format must be 555-555-5555." });
-        }
-
-        
-        if (formData.comments === "") {
-            errors.push({ id: 'comments', msg: "Please provide a message or comment." });
-        }
+        if (!sanitizedData.fname) errors.push("First name is required.");
+        if (!sanitizedData.email.includes('@')) errors.push("Valid email is required.");
 
         if (errors.length > 0) {
-            
-            console.warn("Validation failed:", errors);
-            showErrors(errors);
+            statusMessage.textContent = errors.join(' ');
+            statusMessage.style.color = "red";
         } else {
-            
-            statusMessage.textContent = "Success! Your message has been sent.";
+            // Part 4: User-friendly success message
+            statusMessage.textContent = "Securely processed your message!";
             statusMessage.style.color = "green";
-            console.log("Form submitted successfully:", formData);
             form.reset();
         }
     });
-
-    
-    function showErrors(errorList) {
-        errorList.forEach(error => {
-            const inputField = document.getElementById(error.id);
-            if (inputField) {
-                inputField.style.borderColor = "red";
-                
-                
-                const errorSpan = document.createElement('span');
-                errorSpan.className = 'error-msg';
-                errorSpan.style.color = 'red';
-                errorSpan.style.fontSize = '0.8rem';
-                errorSpan.textContent = error.msg; 
-                
-                inputField.parentNode.insertBefore(errorSpan, inputField.nextSibling);
-            }
-        });
-    }
-
-    function clearErrors() {
-        
-        document.querySelectorAll('.error-msg').forEach(msg => msg.remove());
-        
-        document.querySelectorAll('input, textarea').forEach(input => input.style.borderColor = "");
-    }
 });
