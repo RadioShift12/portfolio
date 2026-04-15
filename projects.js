@@ -1,9 +1,17 @@
+import { Project } from './modules/project.js';
+// Part 3: Modular Export - Utility for sanitization (Replaces innerHTML)
+export function createSafeElement(tag, text) {
+    const el = document.createElement(tag);
+    el.textContent = text;
+    return el;
+}
+
 let currentId = 0; 
 
-// Part 2: Security - Rate Limiting Closure
+// Part 2: Security - Rate Limiting Closure (Maintained from B2)
 const checkRateLimit = (() => {
     let lastSubmit = 0;
-    const limit = 5000; // 5 second cooldown
+    const limit = 5000; 
     return () => {
         const now = Date.now();
         if (now - lastSubmit < limit) return false;
@@ -12,86 +20,49 @@ const checkRateLimit = (() => {
     };
 })();
 
-// Part 3: Object-Oriented Implementation
-class Project {
-    #id;
-    
-    constructor({ title, description, technologiesUsed, image }) {
-        this.#id = currentId++; 
-        // Part 2: XSS Protection / Sanitization system
-        this.title = this.sanitize(title);
-        this.description = this.sanitize(description);
-        this.technologiesUsed = technologiesUsed.map(t => this.sanitize(t));
-        this.image = image || 'placeholder.png';
-    }
-
-    // I didnt know JS had getters, so that is pretty cool.
-    get ID() {
-        return this.#id;
-    }
-
-    // Securely escapes input by using textContent first, I found this approach online, if I still shouldnt use it, please let me know.
-    sanitize(str) {
-        const div = document.createElement('div');
-        div.textContent = str; 
-        return div.innerHTML; 
-    }
-
-    // Method for daa access
-    getDetails() {
-        return {
-            title: this.title,
-            description: this.description,
-            tech: this.technologiesUsed,
-            image: this.image
-        };
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Part 2: CSRF Protection Setup
     const csrfToken = Math.random().toString(36).substring(2);
     sessionStorage.setItem('project_csrf_token', csrfToken);
-
-    const initialData = [
-        {
-            title: "Pen Plotter",
-            image: "printer.jpg",
-            description: "A pen plotter based on the frame of a 3d printer.",
-            technologiesUsed: ["Arduino", "CNC", "3D Printing"]
-        },
-        {
-            title: "Alarm Clock",
-            image: "clock.png",
-            description: "A 3D printed alarm clock with a remote control.",
-            technologiesUsed: ["ESP32", "C++"]
-        },
-        {
-            title: "Portfolio website",
-            image: "site.png",
-            description: "A portfolio website to showcase my projects and skills.",
-            technologiesUsed: ["HTML", "CSS", "JavaScript"]
-        }
-    ];
-
-    let projectInstances = initialData.map(data => new Project(data));
 
     const displayArea = document.getElementById('project-display-area');
     const searchInput = document.getElementById('project-search');
     const submissionForm = document.getElementById('project-submission-form');
     const statusDiv = document.getElementById('submission-status');
 
+    let projectInstances = [];
+
+    // Part 3: Secure AJAX data loading using Fetch
+    async function loadInitialData() {
+        try {
+            console.log("Fetching project data...");
+            const response = await fetch('projects.json');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            // Inside loadInitialData in projects.js
+            projectInstances = data.map(item => new Project({ ...item, currentId: currentId++ }));
+            renderProjects(projectInstances);
+            
+        } catch (error) {
+            // Part 4: Comprehensive error handling with user feedback
+            console.error("Fetch Error:", error);
+            statusDiv.textContent = "Failed to load projects. Please try again later.";
+            statusDiv.style.color = "red";
+        }
+    }
+
     function renderProjects(list) {
         displayArea.replaceChildren();
 
         if (list.length === 0) {
-            const noMatch = document.createElement('p');
-            noMatch.textContent = "No projects found matching your search.";
-            displayArea.appendChild(noMatch);
+            displayArea.appendChild(createSafeElement('p', "No projects found matching your search."));
             return;
         }
 
-        // Part 3: Array Iteration & Destructuring
         list.forEach(project => {
             try {
                 const { title, description, tech, image } = project.getDetails();
@@ -99,38 +70,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const article = document.createElement('article');
                 article.className = 'project-item';
 
-                const h2 = document.createElement('h2');
-                h2.textContent = title;
-
+                // Using textContent via createSafeElement helper to avoid innerHTML
+                const h2 = createSafeElement('h2', title);
+                
                 const img = document.createElement('img');
                 img.src = image;
                 img.className = 'project-img';
+                img.alt = title; // Accessibility
                 img.onerror = () => { img.src = 'placeholder.png'; };
 
-                const p = document.createElement('p');
-                p.textContent = description;
+                const p = createSafeElement('p', description);
 
                 const techDiv = document.createElement('div');
                 techDiv.className = 'tech-tags';
                 tech.forEach(t => {
-                    const span = document.createElement('span');
+                    const span = createSafeElement('span', t);
                     span.className = 'tag';
-                    span.textContent = t;
                     techDiv.appendChild(span);
                 });
 
                 article.append(h2, img, p, techDiv);
                 displayArea.appendChild(article);
-            } catch (error) {
-                // Part 4: Fallback Content
-                console.error("Render Error:", error);
-                const errorFallback = document.createElement('div');
-                errorFallback.textContent = "Error loading project content.";
-                displayArea.appendChild(errorFallback);
+            } catch (err) {
+                console.error("Render Item Error:", err);
             }
         });
     }
 
+    // Search logic (Maintained)
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         const filtered = projectInstances.filter(p => {
@@ -145,15 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
     submissionForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
+        // Rate Limit Check
         if (!checkRateLimit()) {
             statusDiv.textContent = "Too many requests. Please wait.";
             statusDiv.style.color = "orange";
             return;
         }
 
+        // Token Validation
         const storedToken = sessionStorage.getItem('project_csrf_token');
-        if (!storedToken) {
+        if (!storedToken || storedToken !== csrfToken) {
             console.error("Security: CSRF validation failed.");
+            statusDiv.textContent = "Security validation failed.";
             return;
         }
 
@@ -170,5 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDiv.style.color = "green";
     });
 
-    renderProjects(projectInstances);
+    // Initial load
+    loadInitialData();
 });
